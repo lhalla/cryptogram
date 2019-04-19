@@ -1,30 +1,30 @@
 package main.client.ui;
 
-import java.awt.EventQueue;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EmptyBorder;
 
-import main.client.Client;
+import main.client.LoginHandler;
 
 public class ClientLogin extends JFrame
 {
 
     private static final long serialVersionUID = 7051067988953935071L;
 
-    private final Client clientBE;
-
     private final JPanel contentPane;
 
     private final JTextField fUsername;
     private final JTextField fServerIP;
     private final JTextField fServerPort;
+
+    private final LoginHandler loginHandler;
 
     /**
      * Create the frame.
@@ -34,30 +34,55 @@ public class ClientLogin extends JFrame
      * @throws InstantiationException
      * @throws ClassNotFoundException
      */
-    public ClientLogin()
+    public ClientLogin( final LoginHandler loginHandler )
     {
-        clientBE = new Client();
+        this.loginHandler = loginHandler;
 
         contentPane = new JPanel();
 
         fUsername = new JTextField();
+        fUsername.addKeyListener( new KeyAdapter()
+        {
+            @Override
+            public void keyPressed( final KeyEvent arg0 )
+            {
+                if ( arg0.getKeyCode() == KeyEvent.VK_ENTER )
+                {
+                    fServerIP.requestFocusInWindow();
+                }
+            }
+        } );
         fServerIP = new JTextField();
+        fServerIP.addKeyListener( new KeyAdapter()
+        {
+            @Override
+            public void keyPressed( final KeyEvent e )
+            {
+                if ( e.getKeyCode() == KeyEvent.VK_ENTER )
+                {
+                    fServerPort.requestFocusInWindow();
+                }
+            }
+        } );
         fServerPort = new JTextField();
+        fServerPort.addKeyListener( new KeyAdapter()
+        {
+            @Override
+            public void keyPressed( final KeyEvent e )
+            {
+                if ( e.getKeyCode() == KeyEvent.VK_ENTER )
+                {
+                    performLogin( fUsername.getText(), fServerIP.getText(), fServerPort.getText() );
+                }
+            }
+        } );
 
         createLoginPrompt();
     }
 
     private void createLoginPrompt()
     {
-
-        try
-        {
-            UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
-        }
-        catch ( final Exception e )
-        {
-            System.err.println( "Failed to set login window to system native look." );
-        }
+        setDefaultLookAndFeelDecorated( true );
 
         setResizable( false );
         setTitle( "CryptoGram - Login" );
@@ -101,41 +126,22 @@ public class ClientLogin extends JFrame
                 click -> performLogin( fUsername.getText(), fServerIP.getText(), fServerPort.getText() ) );
         btnLogin.setBounds( 10, 127, 89, 23 );
         contentPane.add( btnLogin );
+        setVisible( true );
+
+        fUsername.requestFocusInWindow();
     }
 
     private void performLogin( final String username, final String serverIP, final String serverPort )
     {
-        System.err.println( String.format( "%s, %s:%s", username, serverIP, serverPort ) );
+        final boolean success = loginHandler.apply( username, serverIP, serverPort );
 
-        final int errorCode = clientBE.loginToServer( username, serverIP, serverPort );
-
-        if ( errorCode == Client.SERVER_LOGIN_OK )
+        if ( success )
         {
             dispose();
-            new ClientGUI( username, serverIP, serverPort );
         }
         else
         {
             System.err.println( "Login failed!" );
         }
-    }
-
-    /**
-     * Launch the application.
-     */
-    public static void main( final String [ ] args )
-    {
-        EventQueue.invokeLater( () ->
-        {
-            try
-            {
-                final ClientLogin frame = new ClientLogin();
-                frame.setVisible( true );
-            }
-            catch ( final Exception e )
-            {
-                e.printStackTrace();
-            }
-        } );
     }
 }
