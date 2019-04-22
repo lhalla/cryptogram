@@ -1,5 +1,6 @@
 package main.client.ui;
 
+import java.awt.Color;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
@@ -10,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
+import main.client.Client;
 import main.client.LoginHandler;
 
 /**
@@ -139,22 +141,35 @@ public class ClientLogin extends JFrame
 
     /**
      * Logs the user in with the specified parameters.
-     * 
+     *
      * @param username   - the selected username
      * @param serverIP   - the specified server's IP address
      * @param serverPort - the specified server's port
      */
     private void performLogin( final String username, final String serverIP, final String serverPort )
     {
-        final boolean success = loginHandler.apply( username, serverIP, serverPort );
+        final int errorCode = loginHandler.apply( username, serverIP, serverPort );
 
-        if ( success )
+        fUsername.setBackground( Color.WHITE );
+        fServerIP.setBackground( Color.WHITE );
+        fServerPort.setBackground( Color.WHITE );
+
+        if ( errorCode == Client.JOIN_OK )
         {
             dispose();
         }
-        else
+        else if ( errorCode == Client.JOIN_ERROR_USER )
         {
-            System.err.println( "Login failed!" );
+            fUsername.setBackground( Color.RED );
+        }
+        else if ( errorCode == Client.JOIN_ERROR_PORT )
+        {
+            fServerPort.setBackground( Color.RED );
+        }
+        else if ( errorCode == Client.JOIN_ERROR_HOST )
+        {
+            fServerPort.setBackground( Color.WHITE );
+            fServerIP.setBackground( Color.RED );
         }
     }
 }

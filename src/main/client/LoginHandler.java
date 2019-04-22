@@ -14,7 +14,7 @@ public interface LoginHandler
      * @param username   - client's username
      * @param serverIP   - server's IP address
      * @param serverPort - server's port number
-     * @return <code>true</code> if successfully joined
+     * @return error code corresponding to the result
      */
-    boolean apply( String username, String serverIP, String serverPort );
+    int apply( String username, String serverIP, String serverPort );
 }

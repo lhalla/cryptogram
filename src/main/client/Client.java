@@ -40,6 +40,11 @@ public class Client implements Runnable, Crypter
 {
     private static final int DH_KEYSIZE = 2048;
 
+    public static final int JOIN_OK = 0;
+    public static final int JOIN_ERROR_USER = 1;
+    public static final int JOIN_ERROR_HOST = 2;
+    public static final int JOIN_ERROR_PORT = 3;
+
     /**
      * Used key exchange protocol.
      */
@@ -105,19 +110,24 @@ public class Client implements Runnable, Crypter
     }
 
     /**
-     * Join the specified server.
+     * Login to the server with the specified credentials.
      *
-     * @param username   - selected username
-     * @param serverIP   - specified server IP address
-     * @param serverPort - specified server port
-     * @return <code>true</code> if parameters were valid
+     * @param username   - client's username
+     * @param serverIP   - server's IP address
+     * @param serverPort - server's port number
+     * @return error code corresponding to the result
      */
-    private boolean joinServer( final String username, final String serverIP, final String serverPort )
+    private int joinServer( final String username, final String serverIP, final String serverPort )
     {
         try
         {
+            if ( username.trim().equals( "" ) )
+            {
+                return JOIN_ERROR_USER;
+            }
+
             this.username = username;
-            this.serverPort = serverPort.matches( "[0-9]+" ) ? Integer.parseInt( serverPort ) : 8080;
+            this.serverPort = Integer.parseInt( serverPort );
 
             socket = new DatagramSocket();
             ip = InetAddress.getByName( serverIP );
@@ -127,12 +137,15 @@ public class Client implements Runnable, Crypter
             runner = new Thread( this, "CryptoGram Client" );
             runner.start();
 
-            return true;
+            return 0;
         }
         catch ( final SocketException | UnknownHostException e )
         {
-            e.printStackTrace();
-            return false;
+            return JOIN_ERROR_HOST;
+        }
+        catch ( final NumberFormatException e )
+        {
+            return JOIN_ERROR_PORT;
         }
     }
 
@@ -208,16 +221,19 @@ public class Client implements Runnable, Crypter
                         {
                             gui.log( "Successfully connected to the lobby!" );
                             gui.setTitle( "CryptoGram Client - CONNECTED (" + username + ")" );
+                            gui.setConnected( true );
                         }
                         else if ( message.getUsername().substring( 0, username.length() ).equals( username ) )
                         {
                             gui.log( "Selected username was already taken, logged in as " + message.getUsername() );
                             gui.setTitle( "CryptoGram Client - CONNECTED (" + message.getUsername() + ")" );
                             gui.setUsername( message.getUsername() );
+                            gui.setConnected( true );
                         }
                         else
                         {
                             gui.log( "Connection failed! Please restart the client." );
+                            gui.setConnected( false );
                         }
                     }
                     /* A keep-alive message from the server to determine whether this client has disconnected. */

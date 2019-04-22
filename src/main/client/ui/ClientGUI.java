@@ -9,6 +9,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -41,6 +43,8 @@ public class ClientGUI extends JFrame
 
     private String username;
 
+    private boolean connected = false;
+
     /**
      * Constructs the chat window view for CryptoGram.
      *
@@ -60,6 +64,20 @@ public class ClientGUI extends JFrame
         log( "For a list of available chat commands, type /help." );
         log( String.format( "Attempting to connect to %s:%d as %s...", serverIP, serverPort, username ) );
         send( new Message( Message.LOGIN, username ) );
+
+        new Timer( "Connection check" ).schedule( new TimerTask()
+        {
+
+            @Override
+            public void run()
+            {
+                if ( !connected )
+                {
+                    log( "Connection failed! Please restart the client." );
+                }
+            }
+
+        }, 5000 );
     }
 
     /**
@@ -70,6 +88,16 @@ public class ClientGUI extends JFrame
     public void setUsername( final String username )
     {
         this.username = username;
+    }
+
+    /**
+     * Sets the connectivity status of this client to the specified one.
+     *
+     * @param connected - <code>true</code> if this client is connected to a server
+     */
+    public void setConnected( final boolean connected )
+    {
+        this.connected = connected;
     }
 
     /**
