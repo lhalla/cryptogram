@@ -5,6 +5,8 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -14,119 +16,229 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 
+import main.client.Crypter;
+import main.common.Message;
+
+/**
+ * Displays the post-login GUI for a CryptoGram client with a chat history.
+ *
+ * @author Lauri Halla-aho
+ */
 public class ClientGUI extends JFrame
 {
 
     private static final long serialVersionUID = 6962717251338732138L;
-    private final JPanel contentPane;
 
-    private final String username;
+    private final Crypter crypter;
 
-    private JTextArea history;
+    private final JPanel content;
 
-    private JTextField txtMessage;
+    private JTextArea chatHistory;
+
+    private JTextField chatMessage;
+
+    private String username;
 
     /**
-     * Create the frame.
+     * Constructs the chat window view for CryptoGram.
+     *
+     * @param crypter    - the interface used to communicate with a peer
+     * @param username   - the selected username
+     * @param serverIP   - the target server's IP address
+     * @param serverPort - the target server's port
      */
-    public ClientGUI( final String username, final String serverIP, final int serverPort )
+    public ClientGUI( final Crypter crypter, final String username, final String serverIP, final int serverPort )
     {
         setResizable( false );
-        this.username = username;
-        contentPane = new JPanel();
+        setUsername( username );
+        this.crypter = crypter;
+        content = new JPanel();
 
         createWindow();
-        log( String.format( "Successfully connected to %s:%d as %s!", serverIP, serverPort, username ) );
         log( "For a list of available chat commands, type /help." );
+        log( String.format( "Attempting to connect to %s:%d as %s...", serverIP, serverPort, username ) );
+        send( new Message( Message.LOGIN, username ) );
     }
 
+    /**
+     * Sets the username for this client.
+     *
+     * @param username - this client's username
+     */
+    public void setUsername( final String username )
+    {
+        this.username = username;
+    }
+
+    /**
+     * Draws the chat window.
+     */
     private void createWindow()
     {
-        try
-        {
-            UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
-        }
-        catch ( final Exception e )
-        {
-            System.err.println( "Failed to set login window to system native look." );
-        }
+        setDefaultLookAndFeelDecorated( true );
 
-        setTitle( "CryptoGram Client - " + username );
+        setTitle( "CryptoGram Client - DISCONNECTED" );
         setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
         setSize( 800, 500 );
-        contentPane.setBorder( new EmptyBorder( 5, 5, 5, 5 ) );
-        setContentPane( contentPane );
+        content.setBorder( new EmptyBorder( 5, 5, 5, 5 ) );
+        setContentPane( content );
 
-        final GridBagLayout gbl_contentPane = new GridBagLayout();
-        gbl_contentPane.columnWidths = new int [ ] { 30, 665, 75, 30 };
-        gbl_contentPane.rowHeights = new int [ ] { 50, 400, 40, 10 };
-        gbl_contentPane.columnWeights = new double [ ] { 1.0, Double.MIN_VALUE };
-        gbl_contentPane.rowWeights = new double [ ] { 1.0, Double.MIN_VALUE };
-        contentPane.setLayout( gbl_contentPane );
+        final GridBagLayout layout = new GridBagLayout();
+        layout.columnWidths = new int [ ] { 30, 665, 75, 30 };
+        layout.rowHeights = new int [ ] { 50, 400, 40, 10 };
+        layout.columnWeights = new double [ ] { 1.0, Double.MIN_VALUE };
+        layout.rowWeights = new double [ ] { 1.0, Double.MIN_VALUE };
+        content.setLayout( layout );
 
-        history = new JTextArea();
-        history.setEditable( false );
-        final JScrollPane scrollHistory = new JScrollPane( history );
-        final GridBagConstraints gbc_scrollHistory = new GridBagConstraints();
-        gbc_scrollHistory.insets = new Insets( 0, 0, 5, 5 );
-        gbc_scrollHistory.fill = GridBagConstraints.BOTH;
-        gbc_scrollHistory.gridx = 1;
-        gbc_scrollHistory.gridy = 1;
-        gbc_scrollHistory.gridwidth = 2;
-        contentPane.add( scrollHistory, gbc_scrollHistory );
+        chatHistory = new JTextArea();
+        chatHistory.setEditable( false );
+        final JScrollPane scrollChatHistory = new JScrollPane( chatHistory );
+        final GridBagConstraints scrollChatHistoryConstraints = new GridBagConstraints();
+        scrollChatHistoryConstraints.insets = new Insets( 0, 0, 5, 5 );
+        scrollChatHistoryConstraints.fill = GridBagConstraints.BOTH;
+        scrollChatHistoryConstraints.gridx = 1;
+        scrollChatHistoryConstraints.gridy = 1;
+        scrollChatHistoryConstraints.gridwidth = 2;
+        content.add( scrollChatHistory, scrollChatHistoryConstraints );
 
-        txtMessage = new JTextField();
-        txtMessage.addKeyListener( new KeyAdapter()
+        chatMessage = new JTextField();
+        chatMessage.addKeyListener( new KeyAdapter()
         {
             @Override
             public void keyPressed( final KeyEvent arg0 )
             {
                 if ( arg0.getKeyCode() == KeyEvent.VK_ENTER )
                 {
-                    send( txtMessage.getText() );
+                    send( chatMessage.getText() );
                 }
             }
         } );
-        final GridBagConstraints gbc_txtMessage = new GridBagConstraints();
-        gbc_txtMessage.insets = new Insets( 5, 5, 5, 5 );
-        gbc_txtMessage.fill = GridBagConstraints.BOTH;
-        gbc_txtMessage.gridx = 1;
-        gbc_txtMessage.gridy = 2;
-        contentPane.add( txtMessage, gbc_txtMessage );
+        final GridBagConstraints chatMessageConstraints = new GridBagConstraints();
+        chatMessageConstraints.insets = new Insets( 5, 5, 5, 5 );
+        chatMessageConstraints.fill = GridBagConstraints.BOTH;
+        chatMessageConstraints.gridx = 1;
+        chatMessageConstraints.gridy = 2;
+        content.add( chatMessage, chatMessageConstraints );
 
-        final JButton btnSend = new JButton( "Send" );
-        btnSend.addActionListener( click -> send( txtMessage.getText() ) );
-        final GridBagConstraints gbc_btnSend = new GridBagConstraints();
-        gbc_btnSend.insets = new Insets( 0, 0, 5, 5 );
-        gbc_btnSend.gridx = 2;
-        gbc_btnSend.gridy = 2;
-        contentPane.add( btnSend, gbc_btnSend );
+        final JButton sendButton = new JButton( "Send" );
+        sendButton.addActionListener( click -> send( chatMessage.getText() ) );
+        final GridBagConstraints sendButtonConstraints = new GridBagConstraints();
+        sendButtonConstraints.insets = new Insets( 0, 0, 5, 5 );
+        sendButtonConstraints.gridx = 2;
+        sendButtonConstraints.gridy = 2;
+        content.add( sendButton, sendButtonConstraints );
+
+        addWindowListener( new WindowAdapter()
+        {
+            @Override
+            public void windowClosing( final WindowEvent e )
+            {
+                final Message logout = new Message( Message.LOGOUT, username );
+                send( logout );
+                crypter.close();
+            }
+        } );
+
         setVisible( true );
 
-        txtMessage.requestFocusInWindow();
+        chatMessage.requestFocusInWindow();
     }
 
+    /**
+     * Sends the specified string, if necessary, to the server.
+     *
+     * @param message - message extracted from the message field
+     */
     private void send( final String message )
     {
         if ( !message.trim().equals( "" ) )
         {
-            if ( !message.startsWith( "/" ) )
+            if ( message.equals( "/help" ) )
             {
-                log( username + ": " + message );
+                log( "Available chat commands:" );
+                log( "  /list            - List available users present in the Lobby." );
+                log( "  /join <username> - Start a conversation with the specified user." );
+                log( "  /leave           - Leave your current conversation." );
+                log( "  /quit            - Close the application." );
+
+                chatHistory.setCaretPosition( chatHistory.getDocument().getLength() );
+                chatMessage.setText( "" );
+                chatMessage.requestFocusInWindow();
             }
-            history.setCaretPosition( history.getDocument().getLength() );
-            txtMessage.setText( "" );
-            txtMessage.requestFocusInWindow();
+            else if ( message.equals( "/quit" ) )
+            {
+                dispatchEvent( new WindowEvent( this, WindowEvent.WINDOW_CLOSING ) );
+            }
+            else
+            {
+                Message msg;
+
+                /* Chat command sent. */
+                if ( message.startsWith( "/" ) )
+                {
+                    final String cmd = message.replaceFirst( "/", "" );
+
+                    /* /list */
+                    if ( cmd.equals( "list" ) )
+                    {
+                        msg = new Message( Message.MSG_CHAT_CMD, username, cmd );
+                    }
+                    /* /join */
+                    else if ( cmd.startsWith( "join" ) )
+                    {
+                        crypter.setPeername( message.split( " " ).length > 1 ? message.split( " " )[ 1 ] : null );
+                        msg = new Message( Message.MSG_CHAT_CMD, username, cmd );
+                    }
+                    /* /leave */
+                    else
+                    {
+                        crypter.setPeername( null );
+                        msg = new Message( Message.PEER_LEFT, username, cmd );
+                    }
+
+                    send( msg );
+                }
+                /* Chat message sent. */
+                else
+                {
+                    log( username + ": " + message );
+                    final byte [ ] [ ] cipherParams = crypter.encrypt( message.getBytes() );
+
+                    msg = new Message( Message.MSG_CHAT, cipherParams[ 0 ] );
+                    send( msg );
+
+                    msg = new Message( Message.MSG_PARAMS, cipherParams[ 1 ] );
+                    send( msg );
+                }
+
+            }
         }
     }
 
+    /**
+     * Sends the specified message to the server.
+     *
+     * @param message - message formed by {@link #send(String)}
+     */
+    private void send( final Message message )
+    {
+        crypter.sendMessage( message.getFormattedMessage() );
+        chatHistory.setCaretPosition( chatHistory.getDocument().getLength() );
+        chatMessage.setText( "" );
+        chatMessage.requestFocusInWindow();
+    }
+
+    /**
+     * Logs an entry into this client's chat history.
+     *
+     * @param message - entry to be added
+     */
     public void log( final String message )
     {
         final String timeStamp = new SimpleDateFormat( "HH:mm:ss" ).format( new Date() );
-        history.append( timeStamp + " " + message + "\n" );
+        chatHistory.append( timeStamp + " " + message + "\n" );
     }
 
 }

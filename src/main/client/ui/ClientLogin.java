@@ -8,11 +8,15 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EmptyBorder;
 
 import main.client.LoginHandler;
 
+/**
+ * Displays a login screen for a CryptoGram client.
+ *
+ * @author Lauri Halla-aho
+ */
 public class ClientLogin extends JFrame
 {
 
@@ -27,12 +31,9 @@ public class ClientLogin extends JFrame
     private final LoginHandler loginHandler;
 
     /**
-     * Create the frame.
+     * Constructs a client login screen.
      *
-     * @throws UnsupportedLookAndFeelException
-     * @throws IllegalAccessException
-     * @throws InstantiationException
-     * @throws ClassNotFoundException
+     * @param loginHandler - an interface providing access to the backend login handler
      */
     public ClientLogin( final LoginHandler loginHandler )
     {
@@ -52,6 +53,7 @@ public class ClientLogin extends JFrame
                 }
             }
         } );
+
         fServerIP = new JTextField();
         fServerIP.addKeyListener( new KeyAdapter()
         {
@@ -64,6 +66,7 @@ public class ClientLogin extends JFrame
                 }
             }
         } );
+
         fServerPort = new JTextField();
         fServerPort.addKeyListener( new KeyAdapter()
         {
@@ -80,6 +83,9 @@ public class ClientLogin extends JFrame
         createLoginPrompt();
     }
 
+    /**
+     * Draws the client login prompt.
+     */
     private void createLoginPrompt()
     {
         setDefaultLookAndFeelDecorated( true );
@@ -131,6 +137,13 @@ public class ClientLogin extends JFrame
         fUsername.requestFocusInWindow();
     }
 
+    /**
+     * Logs the user in with the specified parameters.
+     * 
+     * @param username   - the selected username
+     * @param serverIP   - the specified server's IP address
+     * @param serverPort - the specified server's port
+     */
     private void performLogin( final String username, final String serverIP, final String serverPort )
     {
         final boolean success = loginHandler.apply( username, serverIP, serverPort );
